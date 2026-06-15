@@ -43,6 +43,8 @@ for (gene in crm_genes) {
 
 gene2prot_human <- bind_rows(gene2prot_list)
 
+cat("Human protein products identified:", nrow(gene2prot_human))
+
 # 7.2. Retrieval of cellular compartment annotations from human proteins ----
 
 cc_list <- list()

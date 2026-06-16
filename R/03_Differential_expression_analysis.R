@@ -93,7 +93,7 @@ TCGAVisualize_volcano(
 
 # 4.4. Horizontal bar plot representation ----
 
-barplot_gene_type <- ggplot(
+barplot_DEGs_types <- ggplot(
   data = dataDEA,
   mapping = aes(
     x = factor(
@@ -117,20 +117,20 @@ barplot_gene_type <- ggplot(
   ) +
   theme_classic() + theme(legend.position = "bottom")
 
-ggsave(filename = "results/figures/barplot_DEGs_type.png",
-       plot = barplot_gene_type, width = 10, height = 6, dpi = 300 )
+ggsave(filename = "results/figures/barplot_DEGs_types.png",
+       plot = barplot_DEGs_types, width = 10, height = 6, dpi = 300 )
 
 # 4.5. Gene type distribution summary table ----
 
 smallRNA <- c("miRNA", "misc_RNA", "snRNA", "snoRNA", "scaRNA", "rRNA", "Mt_tRNA")
 
 pseudogenes <- c("processed_pseudogene", "unprocessed_pseudogene", "unitary_pseudogene", "polymorphic_pseudogene",
-  "transcribed_processed_pseudogene", "transcribed_unprocessed_pseudogene", "transcribed_unitary_pseudogene",
-  "rRNA_pseudogene", "IG_V_pseudogene", "IG_C_pseudogene", "IG_J_pseudogene", "TR_V_pseudogene")
+                 "transcribed_processed_pseudogene", "transcribed_unprocessed_pseudogene", "transcribed_unitary_pseudogene",
+                 "rRNA_pseudogene", "IG_V_pseudogene", "IG_C_pseudogene", "IG_J_pseudogene", "TR_V_pseudogene")
 
 immune <- c("IG_V_gene", "IG_C_gene", "IG_J_gene", "IG_D_gene", "TR_V_gene", "TR_J_gene", "TR_C_gene")
 
-gene_group_map <- c(
+DEGs_group_map <- c(
   protein_coding = "Protein-coding genes",
   lncRNA = "Long non-coding RNAs",
   setNames(rep("Small non-coding RNAs", length(smallRNA)), smallRNA),
@@ -139,29 +139,29 @@ gene_group_map <- c(
   TEC = "Uncertain"
 )
 
-dataDEA$gene_group <- unname(gene_group_map[dataDEA$gene_type])
+dataDEA$gene_group <- unname(DEGs_group_map[dataDEA$gene_type])
 
-gene_group_summary <- dataDEA %>%
+DEGs_group_summary <- dataDEA %>%
   count(gene_group, gene_type, expression_status, name = "n") %>%
   as.data.frame()
 
-gene_group_summary <- reshape(
-  gene_group_summary,
+DEGs_group_summary <- reshape(
+  DEGs_group_summary,
   idvar = c("gene_group", "gene_type"),
   timevar = "expression_status",
   direction = "wide"
 )
 
-gene_group_summary[is.na(gene_group_summary)] <- 0
+DEGs_group_summary[is.na(DEGs_group_summary)] <- 0
 
-names(gene_group_summary) <- sub("n.Down regulated in TNBC", "n downregulated",
-  names(gene_group_summary), fixed = TRUE)
+names(DEGs_group_summary) <- sub("n.Down regulated in TNBC", "n downregulated",
+                                 names(DEGs_group_summary), fixed = TRUE)
 
-names(gene_group_summary) <- sub("n.Up regulated in TNBC", "n upregulated",
-  names(gene_group_summary), fixed = TRUE)
+names(DEGs_group_summary) <- sub("n.Up regulated in TNBC", "n upregulated",
+                                 names(DEGs_group_summary), fixed = TRUE)
 
-gene_group_summary <- gene_group_summary[ , c("gene_group", "gene_type", "n downregulated", "n upregulated")]
+DEGs_group_summary <- DEGs_group_summary[ , c("gene_group", "gene_type", "n downregulated", "n upregulated")]
 
-rownames(gene_group_summary) <- NULL
+rownames(DEGs_group_summary) <- NULL
 
-write.csv(gene_group_summary, "results/tables/gene_group_summary.csv")
+write.csv(DEGs_group_summary, "results/tables/DEGs_group_summary.csv")

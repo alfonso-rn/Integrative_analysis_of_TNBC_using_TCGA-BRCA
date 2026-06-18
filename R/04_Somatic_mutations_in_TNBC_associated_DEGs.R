@@ -38,6 +38,8 @@ TCGA_BRCA_mut <- GDCprepare(query_mut)
 
 saveRDS(TCGA_BRCA_mut, "data/raw/TCGA_BRCA_mut.rds")
 
+cat("Total somatic mutations downloaded from TCGA-BRCA:", nrow(TCGA_BRCA_mut))
+
 # 4.2. Comparison of TNBC vs Non-TNBC mutational profile ----
 
 # Extract TCGA sample-level barcodes for TNBC samples
@@ -45,6 +47,8 @@ tnbc_ids <- substr(samplesTNBC, 1, 16)
 
 maf_TNBC <- TCGA_BRCA_mut %>%
   filter(substr(Tumor_Sample_Barcode, 1, 16) %in% tnbc_ids)
+
+cat("Somatic mutations identified in TNBC samples:", nrow(maf_TNBC))
 
 saveRDS(maf_TNBC, "data/processed/maf_TNBC.rds")
 
@@ -55,6 +59,8 @@ nontnbc_ids <- substr(samplesNonTNBC, 1, 16)
 
 maf_NonTNBC <- TCGA_BRCA_mut %>%
   filter(substr(Tumor_Sample_Barcode, 1, 16) %in% nontnbc_ids)
+
+cat("Somatic mutations identified in Non-TNBC samples:", nrow(maf_NonTNBC))
 
 saveRDS(maf_NonTNBC, "data/processed/maf_NonTNBC.rds")
 
@@ -86,29 +92,47 @@ MAF_NonTNBC <- read.maf(maf_NonTNBC, vc_nonSyn = unique(TCGA_BRCA_mut$Variant_Cl
 
 pdf(file = "results/figures/MAFoncoplots.pdf", width = 12, height = 8)
 
-oncoplot(maf = MAF_TNBC, 
-         top = 20,
-         titleText = "TNBC",
-         draw_titv = TRUE,
-         logColBar = TRUE
-         )
+oncoplot(
+  maf = MAF_TNBC, 
+  titleText = "TNBC",
+  top = 20,
+  logColBar = TRUE,
+  removeNonMutated = TRUE,
+  draw_titv = TRUE, 
+  titv_col = c("C>T" = "#7F0000", "C>G" = "#B30000", "C>A" = "#E34A33", 
+               "T>A" = "#FC8D59", "T>C" = "#FDBB84", "T>G" = "#FDD49E")
+)
 
-oncoplot(maf = MAF_NonTNBC,
-         top = 20,
-         titleText = "TNBC",
-         draw_titv = TRUE,
-         logColBar = TRUE
-         )
+oncoplot(
+  maf = MAF_NonTNBC, 
+  titleText = "NonTNBC",
+  top = 20,
+  logColBar = TRUE,
+  removeNonMutated = TRUE,
+  draw_titv = TRUE, 
+  titv_col = c("C>T" = "#7F0000", "C>G" = "#B30000", "C>A" = "#E34A33", 
+               "T>A" = "#FC8D59", "T>C" = "#FDBB84", "T>G" = "#FDD49E")
+)
 
 dev.off()
 
-# 4.3. Selection of non-truncating somatic mutations in TNBC-associated DEGs ----
+# 4.4. Somatic mutations in TNBC-associated DEGs ----
 
-DEGs_ID <- dataDEGsLevel$mRNA
+DEGs_ID <- rownames(dataDEGsLevel)
 
 maf_TNBC_DEGs <- maf_TNBC[maf_TNBC$Gene %in% DEGs_ID, ]
 
 cat("Mutations in DEGs from TNBC patient:", nrow(maf_TNBC_DEGs))
+
+saveRDS(nonMutDEGs, "data/processed/nonMutDEGs.rds")
+
+nonMutDEGs <- dataDEGsLevel[!DEGs_ID %in% maf_TNBC_DEGs$Gene, ]
+MutDEGs <- dataDEGsLevel[DEGs_ID %in% maf_TNBC_DEGs$Gene, ]
+
+cat("DEGs from TNBC samples with any mutations:", nrow(MutDEGs), "\n",
+    "DEGs from TNBC samples without any mutations:", nrow(nonMutDEGs))
+
+# 4.5. Selection of non-truncating somatic mutations in TNBC-associated DEGs ----
 
 maf_non_trunc <- maf_TNBC_DEGs %>% 
   filter(
@@ -127,7 +151,7 @@ maf_non_trunc <- maf_TNBC_DEGs %>%
 
 cat("Non-truncating mutations in DEGs from TNBC patient:", nrow(maf_non_trunc))
 
-# 4.4. Categorizing exonic vs intronic mutations in TNBC-associated DEGs
+# 4.5. Categorizing exonic vs intronic mutations in TNBC-associated DEGs ----
 
 # Intronic mutations
 maf_intronic_TNBC <- maf_non_trunc[!is.na(maf_non_trunc$INTRON), ]
@@ -152,11 +176,3 @@ maf_exonic_TNBC$expression_status <- dataDEGsLevel$expression_status[
   match(maf_exonic_TNBC$Gene, dataDEGsLevel$mRNA)]
 
 saveRDS(maf_exonic_TNBC, "data/processed/maf_exonic_TNBC.rds")
-
-# 4.5. Selection of DEGs without mutations
-
-nonMutDEGs <- dataDEGsLevel[!dataDEGsLevel$mRNA %in% unique(maf_TNBC_DEGs$Gene), ]
-
-cat("DEGs without any mutations:", nrow(nonMutDEGs))
-
-saveRDS(nonMutDEGs, "data/processed/nonMutDEGs.rds")

@@ -48,7 +48,8 @@ write.csv(FEA_DEGs_terms, "results/tables/FEA_DEGs_terms.csv", row.names = FALSE
 
 FEA_top_abundant <- FEA_DEGs %>%
   arrange(desc(intersection_size)) %>%
-  slice_head(n = 10)
+  slice_head(n = 10) %>%
+  mutate(parents = as.character(parents))
 
 write.csv(FEA_top_abundant, "results/tables/FEA_top_abundant.csv", row.names = FALSE)
 
@@ -66,21 +67,22 @@ ggsave(filename = "results/figures/DEGs_FEAplot.png", plot = DEGs_FEAplot2,
 
 genesCRM <- selfTargetingCRMs$common_genes
 
-FEA_DEGs$CRM_genes_in_term <- NA
+FEA_DEGs$CRM_genes_in_term <- NA_character_
 
 for (i in seq_len(nrow(FEA_DEGs))) {
   
   genes_intersection <- unlist(strsplit(FEA_DEGs$intersection[i], ","))
   genes_intersection <- trimws(genes_intersection)
   
-  genes_overlap <- genes_intersection[genes_intersection %in% genesCRM]
+  CRM_genes <- intersect(genes_intersection, genesCRM)
   
-  if (length(genes_overlap) > 0) {
-    FEA_DEGs$CRM_genes_in_term[i] <- paste(genes_overlap, collapse = ", ")
+  if (length(CRM_genes) > 0) {
+    FEA_DEGs$CRM_genes_in_term[i] <- paste(CRM_genes, collapse = "; ")
   }
 }
 
 FEA_selfTargetingCRMs <- FEA_DEGs[!is.na(FEA_DEGs$CRM_genes_in_term), ]
+FEA_selfTargetingCRMs$parents <- as.character(FEA_selfTargetingCRMs$parents)
 
 write.csv(FEA_selfTargetingCRMs, "results/tables/FEA_selfTargetingCRMs.csv", row.names = FALSE)
 
@@ -88,13 +90,12 @@ write.csv(FEA_selfTargetingCRMs, "results/tables/FEA_selfTargetingCRMs.csv", row
 
 FEA_selfTargetingCRMs_top <- FEA_selfTargetingCRMs %>%
   mutate(
-    CRM_gene_count = lengths(strsplit(CRM_genes_in_term, ",\\s*")),
+    CRM_gene_count = lengths(strsplit(CRM_genes_in_term, "; ")),
     minus_log10_p = -log10(p_value),
-    term_label = paste0(term_name, " [", source, "]",
-                        "\nCRM genes: ", CRM_genes_in_term)
+    term_label = paste(term_name, source, CRM_genes_in_term, sep = " | ")
   ) %>%
+  arrange(query, source, p_value) %>%
   group_by(query, source) %>%
-  arrange(p_value, desc(CRM_gene_count), desc(intersection_size), .by_group = TRUE) %>%
   slice_head(n = 5) %>%
   ungroup()
 

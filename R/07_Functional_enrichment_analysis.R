@@ -19,7 +19,7 @@ library(gprofiler2)
 library(ggplot2)
 
 dataDEA <- readRDS("data/processed/dataDEA.rds")
-selfTargetingCRMs <- readRDS("data/processed/selfTargetingCRMs.rds")
+intragenicCRMs <- readRDS("data/processed/intragenicCRMs.rds")
 
 # 7.1. Functional enrichment analysis (FEA) ----
 
@@ -65,7 +65,7 @@ ggsave(filename = "results/figures/DEGs_FEAplot.png", plot = DEGs_FEAplot2,
 
 # 7.2. Identification of enriched terms containing self-targeting CRM genes ----
 
-genesCRM <- selfTargetingCRMs$common_genes
+genesCRM <- intragenicCRMs$common_genes
 
 FEA_DEGs$CRM_genes_in_term <- NA_character_
 
@@ -81,14 +81,14 @@ for (i in seq_len(nrow(FEA_DEGs))) {
   }
 }
 
-FEA_selfTargetingCRMs <- FEA_DEGs[!is.na(FEA_DEGs$CRM_genes_in_term), ]
-FEA_selfTargetingCRMs$parents <- as.character(FEA_selfTargetingCRMs$parents)
+FEA_intragenicCRMs <- FEA_DEGs[!is.na(FEA_DEGs$CRM_genes_in_term), ]
+FEA_intragenicCRMs$parents <- as.character(FEA_intragenicCRMs$parents)
 
-write.csv(FEA_selfTargetingCRMs, "results/tables/FEA_selfTargetingCRMs.csv", row.names = FALSE)
+write.csv(FEA_intragenicCRMs, "results/tables/FEA_intragenicCRMs.csv", row.names = FALSE)
 
 # 7.3. Top 5 enriched terms associated with self-targeting CRM genes ----
 
-FEA_selfTargetingCRMs_top <- FEA_selfTargetingCRMs %>%
+FEA_intragenicCRMs_top <- FEA_intragenicCRMs %>%
   mutate(
     CRM_gene_count = lengths(strsplit(CRM_genes_in_term, "; ")),
     minus_log10_p = -log10(p_value),
@@ -99,8 +99,8 @@ FEA_selfTargetingCRMs_top <- FEA_selfTargetingCRMs %>%
   slice_head(n = 5) %>%
   ungroup()
 
-FEA_selfTargetingCRMs_dotplot <- ggplot(
-  FEA_selfTargetingCRMs_top,
+FEA_intragenicCRMs_dotplot <- ggplot(
+  FEA_intragenicCRMs_top,
   aes(
     x = minus_log10_p,
     y = reorder(term_label, minus_log10_p),
@@ -120,5 +120,5 @@ FEA_selfTargetingCRMs_dotplot <- ggplot(
     strip.text = element_text(face = "bold")
   )
 
-ggsave("results/figures/FEA_selfTargetingCRMs_dotplot.png", FEA_selfTargetingCRMs_dotplot,
+ggsave("results/figures/FEA_intragenicCRMs_dotplot.png", FEA_intragenicCRMs_dotplot,
        width = 13, height = 9, dpi = 300, bg = "white")

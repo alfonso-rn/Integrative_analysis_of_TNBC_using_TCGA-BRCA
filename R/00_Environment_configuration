@@ -36,7 +36,7 @@ BiocManager::install(c(
   )
 )
 
-# RBioGateway & motifbreakR packages
+# RBioGateway & motifBreakRpackages
 install.packages("pak")
 pak::pak("tecnomod-um/RBioGateway")
-pak::pak("Simon-Coetzee/motifbreakR")
+pak::pak("Simon-Coetzee/motifBreakR")

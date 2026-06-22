@@ -112,6 +112,7 @@ cat("Number of clinically defined TNBC patients identified:", nrow(tnbc))
 saveRDS(tnbc, "data/processed/tnbc_clinical_table.rds")
 
 # 1.4. Extract TCGA-BRCA barcodes for the identified TNBC patients.
+
 tnbc_barcodes <- tnbc$bcr_patient_barcode
 
 saveRDS(tnbc_barcodes, "data/processed/tnbc_barcodes.rds")

@@ -1,0 +1,11 @@
+"query","source","significant_terms"
+"Downregulated_TNBC","GO:BP",661
+"Downregulated_TNBC","GO:CC",142
+"Downregulated_TNBC","GO:MF",95
+"Downregulated_TNBC","REAC",43
+"Downregulated_TNBC","WP",11
+"Upregulated_TNBC","GO:BP",437
+"Upregulated_TNBC","GO:CC",52
+"Upregulated_TNBC","GO:MF",91
+"Upregulated_TNBC","REAC",65
+"Upregulated_TNBC","WP",11

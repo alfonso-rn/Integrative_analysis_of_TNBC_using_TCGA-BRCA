@@ -1,0 +1,30 @@
+"","gene_group","gene_type","n downregulated","n upregulated"
+"1","Immune receptor genes","IG_C_gene",1,10
+"2","Immune receptor genes","IG_D_gene",0,5
+"3","Immune receptor genes","IG_J_gene",0,11
+"4","Immune receptor genes","IG_V_gene",0,91
+"5","Immune receptor genes","TR_C_gene",0,1
+"6","Immune receptor genes","TR_J_gene",1,2
+"7","Immune receptor genes","TR_V_gene",1,2
+"8","Long non-coding RNAs","lncRNA",1473,2498
+"9","Protein-coding genes","protein_coding",1599,2194
+"10","Pseudogenes","IG_C_pseudogene",0,3
+"11","Pseudogenes","IG_J_pseudogene",0,1
+"12","Pseudogenes","IG_V_pseudogene",1,54
+"13","Pseudogenes","TR_V_pseudogene",2,0
+"14","Pseudogenes","polymorphic_pseudogene",5,6
+"15","Pseudogenes","processed_pseudogene",436,651
+"16","Pseudogenes","rRNA_pseudogene",22,7
+"17","Pseudogenes","transcribed_processed_pseudogene",32,55
+"18","Pseudogenes","transcribed_unitary_pseudogene",16,25
+"19","Pseudogenes","transcribed_unprocessed_pseudogene",85,105
+"20","Pseudogenes","unitary_pseudogene",6,10
+"21","Pseudogenes","unprocessed_pseudogene",134,171
+"22","Small non-coding RNAs","Mt_tRNA",0,1
+"23","Small non-coding RNAs","miRNA",50,23
+"24","Small non-coding RNAs","misc_RNA",54,205
+"25","Small non-coding RNAs","rRNA",1,0
+"26","Small non-coding RNAs","scaRNA",1,2
+"27","Small non-coding RNAs","snRNA",62,67
+"28","Small non-coding RNAs","snoRNA",21,68
+"29","Uncertain","TEC",83,95

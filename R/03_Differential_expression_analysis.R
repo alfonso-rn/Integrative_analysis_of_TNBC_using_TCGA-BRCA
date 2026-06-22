@@ -63,23 +63,24 @@ saveRDS(dataDEGsLevel, "data/processed/dataDEGsLevel.rds")
 
 # 4.3. Volcano plot representation ----
 
+gene_labels <- make.unique(as.character(dataDEA$gene_name))
+
 # Select top genes with |logFC| > 6
 topLogFC_DEGs <- dataDEA %>%
+  mutate(gene_label = gene_labels) %>%
   filter(abs(logFC) > 6) %>%
-  arrange(desc(logFC))
+  arrange(desc(abs(logFC)))
 
 write.csv(topLogFC_DEGs, "results/tables/topLogFC_DEGs.csv")
-
-options(ggrepel.max.overlaps = Inf)
 
 TCGAVisualize_volcano(
   x = dataDEA$logFC,
   y = dataDEA$FDR,
-  filename = "results/figures/volcano_TNBC_vs_NonTNBC.png",
+  filename = "results/figures/volcanoplotDEA.png",
   x.cut = 1,
   y.cut = 0.01,
-  names = dataDEA$gene_name,
-  highlight = top_genes,
+  names = gene_labels,
+  highlight = topLogFC_DEGs$gene_label,
   show.names = "highlighted",
   color = c("grey", "red", "blue"),
   names.size = 1.5,

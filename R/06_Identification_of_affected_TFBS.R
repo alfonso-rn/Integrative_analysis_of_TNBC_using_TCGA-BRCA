@@ -109,7 +109,7 @@ write.csv(tfbs_effect_summary, "results/tables/tfbs_effect_summary.csv", row.nam
 
 # Summary of TFs with strong predicted effects
 top_tf_strong <- mb_results_df %>%
-  filter(effect == "strong") %>%
+  dplyr::filter(effect == "strong") %>%
   group_by(geneSymbol) %>%
   summarise(
     strong_predictions = n(),

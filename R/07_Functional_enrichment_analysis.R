@@ -1,8 +1,8 @@
 # 7. Functional enrichment analysis of CRM-associated genes ----
 #
-# Functional enrichment analysis (FEA) was performed on differentially expressed
-# genes (DEGs) in TNBC using g:Profiler. Upregulated and downregulated genes were
-# analysed separately to identify enriched Gene Ontology terms and biological pathways.
+# Functional enrichment analysis was performed on differentially expressed genes
+# (DEGs) in TNBC using g:Profiler. Upregulated and downregulated genes were analysed
+# separately to identify enriched Gene Ontology terms and biological pathways.
 #
 # Enriched terms containing genes associated with prioritized intragenic CRMs 
 # were then identified to explore functional categories potentially linked to 
@@ -19,76 +19,92 @@ library(gprofiler2)
 library(ggplot2)
 
 dataDEA <- readRDS("data/processed/dataDEA.rds")
+top20_mutated_genes <- readRDS("data/processed/top20_mutated_genes.rds")
 intragenicCRMs <- readRDS("data/processed/intragenicCRMs.rds")
 
-# 7.1. Functional enrichment analysis (FEA) ----
+# 7.1. Functional enrichment analysis ----
 
 genes_up <- dataDEA %>%
-  filter(expression_status == "Up regulated in TNBC") %>%
+  dplyr::filter(expression_status == "Up regulated in TNBC") %>%
   pull(gene_name)
 
 genes_down <- dataDEA %>%
-  filter(expression_status == "Down regulated in TNBC") %>%
+  dplyr::filter(expression_status == "Down regulated in TNBC") %>%
   pull(gene_name)
 
-FEA <- gost(
+enrichment <- gost(
   query = list(Upregulated_TNBC = genes_up, Downregulated_TNBC = genes_down),
   organism = "hsapiens",
-  sources = c("GO:BP", "GO:MF", "GO:CC", "REAC", "KEGG", "WP"),
+  sources = c("GO:BP", "GO:MF", "GO:CC", "REAC", "KEGG
+              ", "WP"),
   correction_method = "fdr",
   evcodes = TRUE
 )
 
+saveRDS(enrichment, "data/processed/enrichment.rds")
+
 # Results summary tables
-FEA_DEGs <- FEA$result
+enrichment_DEGs <- enrichment$result
 
-FEA_DEGs_terms <- FEA_DEGs %>% count(query, source, name = "significant_terms")
+enrichment_DEGs_terms <- enrichment_DEGs %>% count(query, source, name = "significant_terms")
 
-write.csv(FEA_DEGs_terms, "results/tables/FEA_DEGs_terms.csv", row.names = FALSE)
+write.csv(enrichment_DEGs_terms, "results/tables/enrichment_DEGs_terms.csv", row.names = FALSE)
 
-FEA_top_abundant <- FEA_DEGs %>%
+enrichment_top_abundant <- enrichment_DEGs %>%
   arrange(desc(intersection_size)) %>%
   slice_head(n = 10) %>%
   mutate(parents = as.character(parents))
 
-write.csv(FEA_top_abundant, "results/tables/FEA_top_abundant.csv", row.names = FALSE)
+write.csv(enrichment_top_abundant, "results/tables/enrichment_top_abundant.csv", row.names = FALSE)
 
-# Manhattan-like-plot
-DEGs_FEAplot1 <- gostplot(FEA, capped = TRUE, interactive = FALSE)
+# Manhattan-like plot of enriched terms associated with top mutated DEGs
+top_genes <- unique(unlist(top20_mutated_genes))
 
-DEGs_FEAplot2 <- publish_gostplot(DEGs_FEAplot1, 
-                                  highlight_terms = FEA_top_abundant$term_id, 
+top_terms <- enrichment_DEGs %>%
+  dplyr::filter(grepl(paste(top_genes, collapse = "|"), intersection)) %>%
+  pull(term_id) %>%
+  unique()
+
+top_terms_significant <- enrichment_DEGs %>%
+  dplyr::filter(term_id %in% top_terms) %>%
+  arrange(p_value) %>%
+  slice_head(n = 10)
+
+DEGs_enrichmentplot1 <- gostplot(enrichment, capped = TRUE, interactive = FALSE)
+
+DEGs_enrichmentplot2 <- publish_gostplot(DEGs_enrichmentplot1, 
+                                  highlight_terms = top_terms_significant, 
                                   width = NA, height = NA, filename = NULL )
 
-ggsave(filename = "results/figures/DEGs_FEAplot.png", plot = DEGs_FEAplot2,
+ggsave(filename = "results/figures/topmutatedDEGs_enrichmentplot.png", plot = DEGs_enrichmentplot2,
        width = 10, height = 7, dpi = 300, bg = "white")
 
 # 7.2. Identification of enriched terms containing intragenic CRM genes ----
 
 genesCRM <- intragenicCRMs$common_genes
 
-FEA_DEGs$CRM_genes_in_term <- NA_character_
+enrichment_DEGs$CRM_genes_in_term <- NA_character_
 
-for (i in seq_len(nrow(FEA_DEGs))) {
+for (i in seq_len(nrow(enrichment_DEGs))) {
   
-  genes_intersection <- unlist(strsplit(FEA_DEGs$intersection[i], ","))
+  genes_intersection <- unlist(strsplit(enrichment_DEGs$intersection[i], ","))
   genes_intersection <- trimws(genes_intersection)
   
   CRM_genes <- intersect(genes_intersection, genesCRM)
   
   if (length(CRM_genes) > 0) {
-    FEA_DEGs$CRM_genes_in_term[i] <- paste(CRM_genes, collapse = "; ")
+    enrichment_DEGs$CRM_genes_in_term[i] <- paste(CRM_genes, collapse = "; ")
   }
 }
 
-FEA_intragenicCRMs <- FEA_DEGs[!is.na(FEA_DEGs$CRM_genes_in_term), ]
-FEA_intragenicCRMs$parents <- as.character(FEA_intragenicCRMs$parents)
+enrichment_intragenicCRMs <- enrichment_DEGs[!is.na(enrichment_DEGs$CRM_genes_in_term), ]
+enrichment_intragenicCRMs$parents <- as.character(enrichment_intragenicCRMs$parents)
 
-write.csv(FEA_intragenicCRMs, "results/tables/FEA_intragenicCRMs.csv", row.names = FALSE)
+write.csv(enrichment_intragenicCRMs, "results/tables/enrichment_intragenicCRMs.csv", row.names = FALSE)
 
 # 7.3. Top 5 enriched terms associated with intragenic CRM genes ----
 
-FEA_intragenicCRMs_top <- FEA_intragenicCRMs %>%
+enrichment_intragenicCRMs_top <- enrichment_intragenicCRMs %>%
   mutate(
     CRM_gene_count = lengths(strsplit(CRM_genes_in_term, "; ")),
     minus_log10_p = -log10(p_value),
@@ -99,8 +115,8 @@ FEA_intragenicCRMs_top <- FEA_intragenicCRMs %>%
   slice_head(n = 5) %>%
   ungroup()
 
-FEA_intragenicCRMs_dotplot <- ggplot(
-  FEA_intragenicCRMs_top,
+enrichment_intragenicCRMs_dotplot <- ggplot(
+  enrichment_intragenicCRMs_top,
   aes(
     x = minus_log10_p,
     y = reorder(term_label, minus_log10_p),
@@ -120,92 +136,5 @@ FEA_intragenicCRMs_dotplot <- ggplot(
     strip.text = element_text(face = "bold")
   )
 
-ggsave("results/figures/FEA_intragenicCRMs_dotplot.png", FEA_intragenicCRMs_dotplot,
-       width = 13, height = 9, dpi = 300, bg = "white")  sources = c("GO:BP", "GO:MF", "GO:CC", "REAC", "KEGG", "WP"),
-  correction_method = "fdr",
-  evcodes = TRUE
-)
-
-# Results summary tables
-FEA_DEGs <- FEA$result
-
-FEA_DEGs_terms <- FEA_DEGs %>% count(query, source, name = "significant_terms")
-
-write.csv(FEA_DEGs_terms, "results/tables/FEA_DEGs_terms.csv", row.names = FALSE)
-
-FEA_top_abundant <- FEA_DEGs %>%
-  arrange(desc(intersection_size)) %>%
-  slice_head(n = 10) %>%
-  mutate(parents = as.character(parents))
-
-write.csv(FEA_top_abundant, "results/tables/FEA_top_abundant.csv", row.names = FALSE)
-
-# Manhattan-like-plot
-DEGs_FEAplot1 <- gostplot(FEA, capped = TRUE, interactive = FALSE)
-
-DEGs_FEAplot2 <- publish_gostplot(DEGs_FEAplot1, 
-                                  highlight_terms = FEA_top_abundant$term_id, 
-                                  width = NA, height = NA, filename = NULL )
-
-ggsave(filename = "results/figures/DEGs_FEAplot.png", plot = DEGs_FEAplot2,
-       width = 10, height = 7, dpi = 300, bg = "white")
-
-# 7.2. Identification of enriched terms containing self-targeting CRM genes ----
-
-genesCRM <- intragenicCRMs$common_genes
-
-FEA_DEGs$CRM_genes_in_term <- NA_character_
-
-for (i in seq_len(nrow(FEA_DEGs))) {
-  
-  genes_intersection <- unlist(strsplit(FEA_DEGs$intersection[i], ","))
-  genes_intersection <- trimws(genes_intersection)
-  
-  CRM_genes <- intersect(genes_intersection, genesCRM)
-  
-  if (length(CRM_genes) > 0) {
-    FEA_DEGs$CRM_genes_in_term[i] <- paste(CRM_genes, collapse = "; ")
-  }
-}
-
-FEA_intragenicCRMs <- FEA_DEGs[!is.na(FEA_DEGs$CRM_genes_in_term), ]
-FEA_intragenicCRMs$parents <- as.character(FEA_intragenicCRMs$parents)
-
-write.csv(FEA_intragenicCRMs, "results/tables/FEA_intragenicCRMs.csv", row.names = FALSE)
-
-# 7.3. Top 5 enriched terms associated with self-targeting CRM genes ----
-
-FEA_intragenicCRMs_top <- FEA_intragenicCRMs %>%
-  mutate(
-    CRM_gene_count = lengths(strsplit(CRM_genes_in_term, "; ")),
-    minus_log10_p = -log10(p_value),
-    term_label = paste(term_name, source, CRM_genes_in_term, sep = " | ")
-  ) %>%
-  arrange(query, source, p_value) %>%
-  group_by(query, source) %>%
-  slice_head(n = 5) %>%
-  ungroup()
-
-FEA_intragenicCRMs_dotplot <- ggplot(
-  FEA_intragenicCRMs_top,
-  aes(
-    x = minus_log10_p,
-    y = reorder(term_label, minus_log10_p),
-    size = CRM_gene_count
-  )
-) +
-  geom_point() +
-  facet_wrap(~ query, scales = "free_y") +
-  labs(
-    x = "-log10(FDR-adjusted p-value)",
-    y = NULL,
-    size = "CRM genes\nin term"
-  ) +
-  theme_bw() +
-  theme(
-    axis.text.y = element_text(size = 6),
-    strip.text = element_text(face = "bold")
-  )
-
-ggsave("results/figures/FEA_intragenicCRMs_dotplot.png", FEA_intragenicCRMs_dotplot,
+ggsave("results/figures/enrichment_intragenicCRMs_dotplot.png", enrichment_intragenicCRMs_dotplot,
        width = 13, height = 9, dpi = 300, bg = "white")
